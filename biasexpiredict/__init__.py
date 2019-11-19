@@ -4,8 +4,8 @@ Author: Derin
 >>> d = BiasExpireDict(expire=4, bias=1)
 >>> d['BiasExpireDict'] = 'foo'
 >>> time.sleep(2)
->>> d
-{'BiasExpireDict': 'foo'}
+>>> d['BiasExpireDict']
+'foo'
 >>> time.sleep(3)
 >>> d['BiasExpireDict']
 Traceback (most recent call last):
