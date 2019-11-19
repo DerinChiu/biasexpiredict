@@ -1,16 +1,18 @@
 """
-Author: zhaolu
+Author: Derin
 
->>> d = BiasExpireDict(expire=5, bias=1)
+>>> d = BiasExpireDict(expire=4, bias=1)
 >>> d['BiasExpireDict'] = 'foo'
->>> time.sleep(3)
->>> d['BiasExpireDict']
-'foo'
+>>> time.sleep(2)
+>>> d
+{'BiasExpireDict': 'foo'}
 >>> time.sleep(3)
 >>> d['BiasExpireDict']
 Traceback (most recent call last):
 ...
 KeyError: 'BiasExpireDict'
+>>> d.update({'ExpireDict': 'foo'}, ExpireDict='foo_', BiasDict='foo_')
+{'ExpireDict': 'foo_', 'BiasDict': 'foo_'}
 """
 import time
 import threading
@@ -52,10 +54,6 @@ class BiasExpireDict:
         self.__thread.setDaemon(True)
         self.__thread.start()
 
-    # def __repr__(self):
-    #     import json
-    #     return json.dumps(self.__dict) + json.dumps(self.__seq)
-
     def __contains__(self, key):
         return key in self.__dict
 
@@ -66,6 +64,9 @@ class BiasExpireDict:
         with self.__lock:
             self.__dict[key] = value
             self.__seq[key] = time.time()
+
+    def __repr__(self):
+        return str(self.__dict)
 
     def __heartbeat(self):
         while 1:
@@ -89,9 +90,18 @@ class BiasExpireDict:
     def get(self, key, default=None):
         return self.__dict.get(key, default)
 
-    def update(self, value):
-        """not write yet"""
-        raise NotImplementedError
+    def update(self, args=None, **kwargs):
+        _e = args or {}
+        _e.update(kwargs)
+
+        with self.__lock:
+            self.__dict.update(args, **kwargs)
+            for k, v in _e.items():
+                # make sure all elements in __sep are in sequence
+                if k in self.__seq:
+                    del self.__seq[k]
+                self.__seq[k] = time.time()
+        return self.__dict
 
     def items(self):
         return self.__dict.items()
@@ -101,3 +111,6 @@ class BiasExpireDict:
 
     def keys(self):
         return self.__dict.keys()
+
+    def seq(self):
+        return self.__seq
